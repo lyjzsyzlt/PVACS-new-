@@ -3,6 +3,7 @@
 #include"defines.h"
 #include"Machine.h"
 #include<random>
+#include<set>
 #include<algorithm>
 #include<iostream>
 
@@ -15,12 +16,14 @@ extern float phmk[100][100];//mk对应的信息素矩阵
 extern float phepc[100][100];//epc对应的信息素矩阵
 extern int machineNum[kmax + 1];
 extern Machine **M;
+extern set<solution> NDS;
 
 void ant::generateV()
 {
 	Vmk = rand() % 100 / 100.0;
 	Vepc = 1 - Vmk;
 	tempB = B;
+	EPC = 0;
 	sol.clear();
 	sol.push_back(-1);//使得sol从1开始编号
 }
@@ -53,7 +56,6 @@ void ant::createBatchSeq()
 		}
 	}
 	// 继续选择后面的解
-	cout << "SIZE=" << SIZE << endl;
 	for (int i = 2; i < SIZE; i++)// 还有bNum-1个批需要加入
 	{
 		float q = rand() % 100 / 100.0;
@@ -113,12 +115,12 @@ void ant::createBatchSeq()
 			}
 		}
 	}
-	cout << id << "蚂蚁的序列为：";
+	out << id << "蚂蚁的序列为：";
 	for (int i = 1; i < sol.size(); i++)
 	{
-		cout << sol[i] << "  ";
+		out << sol[i] << "  ";
 	}
-	cout << endl;
+	out << endl;
 	/*for (int i = 1; i < sol.size(); i++)
 	{
 		cout << i << "   " << tempB[sol[i]].BId << "  " << tempB[sol[i]].JNum << "  " << tempB[sol[i]].BP[1] << endl;
@@ -157,18 +159,18 @@ void ant::LS()
 			{
 				int temp1;
 
-				temp1 = max(CT, M[k][i].avt) + tempB[SOL[h]].BP[k]/M[k][i].V - CT;
+				temp1 = max(CT, M[k][i].avt) + ceil((float)tempB[SOL[h]].BP[k]/M[k][i].V) - CT;
 				if (temp1 > max1)
 					max1 = temp1;
 
-				float temp2 = getEPC1(max(CT, M[k][i].avt), tempB[SOL[h]].BP[k] / M[k][i].V, k, i);
+				float temp2 = getEPC1(max(CT, M[k][i].avt), ceil((float)tempB[SOL[h]].BP[k] / M[k][i].V), k, i);
 				if (temp2 > max2)
 					max2 = temp2;
 			}
 
 			for (int i = 1; i < machineNum[k]+1; i++)
 			{
-				float temp = Vmk * (max(CT, M[k][i].avt) + tempB[SOL[h]].BP[k] / M[k][i].V - CT) / max1 + Vepc * getEPC1(max(CT, M[k][i].avt), tempB[SOL[h]].BP[k] / M[k][i].V, k, i) / max2;
+				float temp = Vmk * (max(CT, M[k][i].avt) + ceil((float)tempB[SOL[h]].BP[k] / M[k][i].V) - CT) / max1 + Vepc * getEPC1(max(CT, M[k][i].avt), ceil((float)tempB[SOL[h]].BP[k] / M[k][i].V), k, i) / max2;
 				if (temp < min)
 				{
 					min = temp;
@@ -182,9 +184,9 @@ void ant::LS()
 			else
 				EPC+= getEPC1(M[k][selectMachine].List.back().BC[k], max(CT, M[k][selectMachine].avt) - M[k][selectMachine].List.back().BC[k],0,0);
 			//计算工作电费
-			EPC += getEPC1(max(CT, M[k][selectMachine].avt), floor(tempB[SOL[h]].BP[k] / M[k][selectMachine].V), k, selectMachine);
+			EPC += getEPC1(max(CT, M[k][selectMachine].avt), ceil(float(tempB[SOL[h]].BP[k]) / M[k][selectMachine].V), k, selectMachine);
 			
-			tempB[SOL[h]].BC[k] = max(CT, M[k][selectMachine].avt) + floor(tempB[SOL[h]].BP[k] / M[k][selectMachine].V);//更新这个批的完成时间
+			tempB[SOL[h]].BC[k] = max(CT, M[k][selectMachine].avt) + ceil(float(tempB[SOL[h]].BP[k]) / M[k][selectMachine].V);//更新这个批的完成时间
 			tempB[SOL[h]].ct = tempB[SOL[h]].BC[k];//批在当前阶段的完工时间，为了后面的排序
 			tempB[SOL[h]].BS[k] = max(CT, M[k][selectMachine].avt);//更新批的开始时间
 			tempB[SOL[h]].MID[k] = selectMachine;
@@ -218,21 +220,21 @@ void ant::LS()
 				EPC += getEPC1(M[k][i].List.back().BC[k], Cmax - M[k][i].List.back().BC[k],0,0);
 		}
 	}
-	cout << "---------------------------------------" << endl;
+	out << "---------------------------------------" << endl;
 
 	//输出每个阶段每台机器上的批情况
 	for (int k = 1; k < kmax + 1; k++)
 	{
 		for (int i = 1; i < machineNum[k] + 1; i++)
 		{
-			cout << "第" << k << "阶段，第" << i << "台机器：" << endl;
+			out << "第" << k << "阶段，第" << i << "台机器：" << endl;
 			list<batch>::iterator it = M[k][i].List.begin();
 			for (; it != M[k][i].List.end(); it++)
-				cout << '\t' << "批：" << (*it).BId << '\t' << "开始时间：" << (*it).BS[k] << '\t' << "完成时间：" << (*it).BC[k]<<'\t'<<"机器："<<(*it).MID[k] << endl;
+				out << '\t' << "批：" << (*it).BId << '\t' << "开始时间：" << (*it).BS[k] << '\t' << "完成时间：" << (*it).BC[k]<<'\t'<<"机器："<<(*it).MID[k]<< endl;
 		}
 	}
 	//输出总的电费，Cmax
-	cout << "EPC=" << EPC << '\t' << "Cmax=" << Cmax << endl;
+	out << "EPC=" << EPC << '\t' << "Cmax=" << Cmax << endl;
 
 	//Right_Shift改进
 	Right_Shift();
@@ -251,7 +253,7 @@ int ant::getEPC1(int t, int detaT, int k, int i)
 	if (t >= 20 * n - 10 && t < 20 * n)
 	{
 		if (t + detaT > 20 * n)
-			return (20 * n - t) * 5 * M[k][i].PW + getEPC1(20 * n, detaT - 20 * n, k, i);
+			return (20 * n - t) * 5 * M[k][i].PW + getEPC1(20 * n, detaT - (20 * n-t), k, i);
 		else
 			return detaT * 5 * M[k][i].PW;
 	}
@@ -295,20 +297,24 @@ void ant::Right_Shift()
 				ST = 9999999;				
 			else
 				ST = tempB[D[h]].BS[k + 1];
-			int tmax = min(Cmax, STnext, ST) - floor(tempB[D[h]].BP[k] / M[k][tempB[D[h]].MID[k]].V);
+			int tmax = min(Cmax, STnext, ST) - ceil((float)tempB[D[h]].BP[k] / M[k][tempB[D[h]].MID[k]].V);
 
 			//寻找最小的t
 			int minEPC = 99999999;
-			int t;
-			for (t = tmin; t <= tmax; t++)
+			int t0;
+			for (int t = tmin; t <= tmax; t++)
 			{
-				int tempEPC = getEPC1(t, floor(tempB[D[h]].BP[k] / M[k][tempB[D[h]].MID[k]].V), k, tempB[D[h]].MID[k]);
+				int tempEPC = getEPC1(t, ceil((float)tempB[D[h]].BP[k] / M[k][tempB[D[h]].MID[k]].V), k, tempB[D[h]].MID[k]);
 				if (tempEPC <= minEPC)
-					minEPC= tempEPC;
+				{
+					minEPC = tempEPC;
+					t0 = t;
+				}
+					
 			}
 
-			tempB[D[h]].BS[k] = t-1;//更新开始加工时间
-			tempB[D[h]].BC[k] = t-1 + floor(tempB[D[h]].BP[k] / M[k][tempB[D[h]].MID[k]].V);//更新完成时间
+			tempB[D[h]].BS[k] = t0;//更新开始加工时间
+			tempB[D[h]].BC[k] = t0 + ceil((float)tempB[D[h]].BP[k] / M[k][tempB[D[h]].MID[k]].V);//更新完成时间
 
 			//更新机器队列
 			 it = M[k][tempB[D[h]].MID[k]].List.begin();
@@ -320,25 +326,17 @@ void ant::Right_Shift()
 		}
 	}
 	//输出改进后的情况
-	cout << endl;
-	cout << "Right_Shift之后：" << endl;
-	/*for (int k = 1; k < kmax + 1; k++)
-	{
-		cout << "第" << k << "阶段" << endl;
-		for (int i = 1; i < tempB.size(); i++)
-		{
-			cout << '\t'<<"批：" << tempB[i].BId << '\t' << "开始时间：" << tempB[i].BS[k] << '\t' << "完成时间：" << tempB[i].BC[k] << '\t' << "机器：" << tempB[i].MID[k] << endl;
-		}
-	}*/
+	out << endl;
+	out << "----------Right_Shift之后-------------：" << endl;
 
 	for (int k = 1; k < kmax + 1; k++)
 	{
 		for (int i = 1; i < machineNum[k] + 1; i++)
 		{
-			cout << "第" << k << "阶段，第" << i << "台机器：" << endl;
+			out << "第" << k << "阶段，第" << i << "台机器：" << endl;
 			list<batch>::iterator it = M[k][i].List.begin();
 			for (; it != M[k][i].List.end(); it++)
-				cout << '\t' << "批：" << (*it).BId << '\t' << "开始时间：" << (*it).BS[k] << '\t' << "完成时间：" << (*it).BC[k] << '\t' << "机器：" << (*it).MID[k] << endl;
+				out << '\t' << "批：" << (*it).BId << '\t' << "开始时间：" << (*it).BS[k] << '\t' << "完成时间：" << (*it).BC[k] << '\t' << "机器：" << (*it).MID[k] << endl;
 		}
 	}
 	//计算改进后的EPC
@@ -347,27 +345,84 @@ void ant::Right_Shift()
 	{
 		for (int i = 1; i < machineNum[k]+1; i++)
 		{
-			list<batch>::iterator it = M[k][i].List.begin();
-			list<batch>::iterator it1;
-			for (; it != M[k][i].List.end(); it++)
+			if (M[k][i].List.empty())
+				newEPC += getEPC1(0, Cmax, 0, 0);
+			else
 			{
-				if (it == M[k][i].List.begin())
+				list<batch>::iterator it = M[k][i].List.begin();
+				list<batch>::iterator it1;
+				for (; it != M[k][i].List.end(); it++)
 				{
-					newEPC += getEPC1(0, (*it).BS[k], 0, 0);
-					newEPC += getEPC1((*it).BS[k], floor((*it).BP[k] / M[k][i].V), k, i);
+					if (it == M[k][i].List.begin())
+					{
+						newEPC += getEPC1(0, (*it).BS[k], 0, 0);
+						newEPC += getEPC1((*it).BS[k], ceil((float)(*it).BP[k] / M[k][i].V), k, i);
+					}
+					else
+					{
+						it1 = (--it);
+						it++;
+						newEPC += getEPC1((*it1).BC[k], (*it).BS[k] - (*it1).BC[k], 0, 0);
+						newEPC += getEPC1((*it).BS[k], ceil((float)(*it).BP[k] / M[k][i].V), k, i);
+					}
 				}
-				else
-				{
-					it1 = (--it);
-					it++;
-					newEPC += getEPC1((*it1).BC[k], (*it).BS[k]- (*it1).BC[k], 0, 0);
-					newEPC += getEPC1((*it).BS[k], floor((*it).BP[k] / M[k][i].V), k, i);
-				}
+				newEPC += getEPC1(M[k][i].List.back().BC[k], Cmax - M[k][i].List.back().BC[k], 0, 0);
 			}
-			newEPC += getEPC1(M[k][i].List.back().BC[k], Cmax - M[k][i].List.back().BC[k], 0, 0);
+			
+			
 		}
 	}
-	cout << "newEPC=" << newEPC << '\t'<<"Cmax="<<Cmax<<endl;
+	out << "newEPC=" << newEPC << '\t'<<"Cmax="<<Cmax<<endl;
+	out << "=================================================" << endl << endl;
+}
+
+void ant::localUpdate()
+{
+	for (int i = 1; i < sol.size()-1; i++)
+	{
+		phmk[i][i + 1] = (1 - pl)*phmk[i][i + 1] + pl * tao;
+		phepc[i][i + 1] = (1 - pl)*phepc[i][i + 1] + pl * tao;
+	}
+}
+
+void ant::updateNDS()
+{
+	solution tempSol;
+	tempSol.batchSeq = sol;
+	tempSol.Cmax = Cmax;
+	tempSol.EPC = newEPC;
+	tempSol.Vmk = Vmk;
+	tempSol.Vepc = Vepc;
+
+	int flag = 0;
+	set<solution>::iterator it = NDS.begin();
+	for (; it != NDS.end(); )
+	{
+		if (tempSol.Cmax > (*it).Cmax&&tempSol.EPC > (*it).EPC) {
+			flag = 1;
+			break;
+		}
+		else if (tempSol.Cmax < (*it).Cmax&&tempSol.EPC < (*it).EPC) {
+			it = NDS.erase(it);
+		}
+		else if (tempSol.Cmax == (*it).Cmax&&tempSol.EPC == (*it).EPC) {
+			flag = 1;
+			break;
+		}
+		else if (tempSol.Cmax == (*it).Cmax || (*it).EPC == tempSol.EPC) {
+			if (tempSol.Cmax > (*it).Cmax || tempSol.EPC > (*it).EPC) {
+				flag = 1;
+				break;
+			}
+			else {
+				it = NDS.erase(it);
+			}
+		}
+		else
+			it++;
+	}
+	if (flag == 0)
+		NDS.insert(tempSol);
 }
 
 ant::~ant()

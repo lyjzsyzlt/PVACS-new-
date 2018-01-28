@@ -24,5 +24,5 @@ void displayBatch(/*vector<batch> B*/);
 void initPh();
 void computeSIb(/*vector<batch> &B*/);
 void initMachine();//初始化机器的信息
-
+void globalUpdate();
 #endif // !functions_H

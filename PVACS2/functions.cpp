@@ -3,9 +3,11 @@
 #include"structs.h"
 #include"Machine.h"
 #include<algorithm>
+#include<set>
 #include<iostream>
 #include<vector>
 #include<fstream>
+#include<cstring>
 using namespace std;
 
 vector<batch> B;
@@ -223,8 +225,8 @@ void initPh()
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			phmk[i][j] = 0.5;
-			phepc[i][j] = 0.5;
+			phmk[i][j] = tao;
+			phepc[i][j] = tao;
 		}
 	}
 }
@@ -257,4 +259,59 @@ void initMachine()
 			M[i][j].List.clear();
 		}
 	}
+}
+
+set<solution> NDS;
+
+void globalUpdate()
+{
+	//分别求出NDS中EPC，Cmax的最小值
+	set<solution>::iterator it = NDS.begin();
+	int minEPC = 99999999;
+	int minCmax = 99999999;
+	for (; it != NDS.end(); it++)
+	{
+		if ((*it).EPC < minEPC)
+			minEPC = (*it).EPC;
+		if ((*it).Cmax < minCmax)
+			minCmax = (*it).Cmax;
+	}
+
+	float detaPhmk[100][100];
+	float detaPhepc[100][100];
+	memset(detaPhmk, 0, sizeof(detaPhmk));
+	memset(detaPhepc, 0, sizeof(detaPhepc));
+
+	for (it = NDS.begin(); it != NDS.end(); it++)
+	{
+		float detaMk = (float)minCmax / (*it).Cmax;
+		float detaEpc = (float)minEPC / (*it).EPC;
+
+		for (int i = 1; i < (*it).batchSeq.size() - 1; i++)
+		{
+			detaPhmk[(*it).batchSeq[i]][(*it).batchSeq[i + 1]] += detaMk;
+			detaPhepc[(*it).batchSeq[i]][(*it).batchSeq[i + 1]] += detaEpc;
+		}
+	}
+	it = NDS.begin();
+	if (!NDS.empty())
+	{
+		for (int i = 1; i < (*it).batchSeq.size() ; i++)
+		{
+			for (int j = 1; j < (*it).batchSeq.size(); j++)
+			{
+				phmk[i][j] = (1 - pg)*phmk[i][j] + pg * detaPhmk[i][j];
+				phepc[i][j] = (1 - pg)*phepc[i][j] + pg * detaPhepc[i][j];
+				if (phmk[i][j] < taoMin)
+					phmk[i][j] = taoMin;
+				if (phmk[i][j] > taoMax)
+					phmk[i][j] = taoMax;
+				if (phepc[i][j] < taoMin)
+					phepc[i][j] = taoMin;
+				if (phepc[i][j] > taoMax)
+					phepc[i][j] = taoMax;
+			}
+		}
+	}
+	
 }

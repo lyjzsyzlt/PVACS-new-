@@ -30,4 +30,24 @@ struct batch
 	int MID[kmax+1];//批每个阶段在哪个机器上
 };
 
+struct solution
+{
+	vector<int> batchSeq;
+	float Vmk;
+	float Vepc;
+	int Cmax;
+	int EPC;
+	bool operator<(const struct solution & right)const
+	{
+		if (this->batchSeq == right.batchSeq&&Vmk == right.Vmk&&Vepc == right.Vepc)
+			return false;
+		else
+		{
+			if (Cmax != right.Cmax)
+				return Cmax > right.Cmax;
+			else
+				return EPC > right.EPC;
+		}
+	}
+};
 #endif // !structs_H
