@@ -24,6 +24,7 @@ void ant::generateV()
 	Vepc = 1 - Vmk;
 	tempB = B;
 	EPC = 0;
+	newEPC = 0;
 	sol.clear();
 	sol.push_back(-1);//使得sol从1开始编号
 }
@@ -59,7 +60,7 @@ void ant::createBatchSeq()
 	for (int i = 2; i < SIZE; i++)// 还有bNum-1个批需要加入
 	{
 		float q = rand() % 100 / 100.0;
-		float max = -999999.0;
+		float max = -99999999.0;
 		int select = -1;//选择的批的编号
 		if (q <= q0)
 		{
@@ -242,20 +243,34 @@ void ant::LS()
 
 int ant::getEPC1(int t, int detaT, int k, int i)
 {
-	int n = t / 20 + 1;
-	if (t >= 20 * n - 20 && t < 20 * n - 10)
+	int n = (t + 3) / 24;
+	if (t >= 24 * n - 3 && t < 24 * n + 7)
 	{
-		if (t + detaT >= 20 * n - 10)
-			return (20 * n - 10 - t) * 10 * M[k][i].PW + getEPC1(20 * n - 10, detaT - (20 * n - 10 - t),k,i);
+		if (t + detaT >= 24 * n + 7)
+			return (24 * n + 7 - t) * 5 * M[k][i].PW + getEPC1(24 * n + 7, detaT - (24 * n + 7 - t), k, i);
+		else
+			return detaT * 5 * M[k][i].PW;
+	}
+	if (t >= 24 * n + 7 && t < 24 * n + 11)
+	{
+		if (t + detaT >= 24 * n + 11)
+			return (24 * n + 11 - t) * 8 * M[k][i].PW + getEPC1(24 * n + 11, detaT - (24 * n + 11 - t), k, i);
+		else
+			return detaT * 8 * M[k][i].PW;
+	}
+	if (t >= 24 * n + 11 && t < 24 * n + 17)
+	{
+		if (t + detaT >= 24 * n + 17)
+			return (24 * n + 17 - t) * 10 * M[k][i].PW + getEPC1(24 * n + 17, detaT - (24 * n + 17 - t), k, i);
 		else
 			return detaT * 10 * M[k][i].PW;
 	}
-	if (t >= 20 * n - 10 && t < 20 * n)
+	if (t >= 24 * n + 17 && t < 24 * n + 21)
 	{
-		if (t + detaT > 20 * n)
-			return (20 * n - t) * 5 * M[k][i].PW + getEPC1(20 * n, detaT - (20 * n-t), k, i);
+		if (t + detaT >= 24 * n + 21)
+			return (24 * n + 21 - t) * 8 * M[k][i].PW + getEPC1(24 * n + 21, detaT - (24 * n + 21 - t), k, i);
 		else
-			return detaT * 5 * M[k][i].PW;
+			return detaT * 8 * M[k][i].PW;
 	}
 }
 
@@ -302,6 +317,7 @@ void ant::Right_Shift()
 			//寻找最小的t
 			int minEPC = 99999999;
 			int t0;
+			//cout << "tmin=" << tmin << "  tmax=" << tmax << endl;
 			for (int t = tmin; t <= tmax; t++)
 			{
 				int tempEPC = getEPC1(t, ceil((float)tempB[D[h]].BP[k] / M[k][tempB[D[h]].MID[k]].V), k, tempB[D[h]].MID[k]);
@@ -340,7 +356,6 @@ void ant::Right_Shift()
 		}
 	}
 	//计算改进后的EPC
-	int newEPC=0;
 	for (int k = 1; k < kmax+1; k++)
 	{
 		for (int i = 1; i < machineNum[k]+1; i++)
@@ -380,8 +395,8 @@ void ant::localUpdate()
 {
 	for (int i = 1; i < sol.size()-1; i++)
 	{
-		phmk[i][i + 1] = (1 - pl)*phmk[i][i + 1] + pl * tao;
-		phepc[i][i + 1] = (1 - pl)*phepc[i][i + 1] + pl * tao;
+		phmk[sol[i]][sol[i + 1]] = (1 - pl)*phmk[sol[i]][sol[i + 1]] + pl * tao;
+		phepc[sol[i]][sol[i + 1]] = (1 - pl)*phepc[sol[i]][sol[i + 1]] + pl * tao;
 	}
 }
 
@@ -393,7 +408,6 @@ void ant::updateNDS()
 	tempSol.EPC = newEPC;
 	tempSol.Vmk = Vmk;
 	tempSol.Vepc = Vepc;
-
 	int flag = 0;
 	set<solution>::iterator it = NDS.begin();
 	for (; it != NDS.end(); )

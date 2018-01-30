@@ -8,6 +8,8 @@
 #include<vector>
 #include<fstream>
 #include<cstring>
+#include<time.h>
+#include<random>
 using namespace std;
 
 vector<batch> B;
@@ -51,7 +53,7 @@ bool cmp4(const batch &b1, const batch &b2)
 // 初始化工件的信息
 void initJob(vector<job> &J)
 {
-	// 从job.txt文件中读取工件的编号，大小，各个阶段的名义加工时间
+	/*// 从job.txt文件中读取工件的编号，大小，各个阶段的名义加工时间
 	ifstream in;
 	in.open("job.txt", ios::in | ios::binary);
 	for (int i = 1; i < JobNum+1; i++)
@@ -64,6 +66,35 @@ void initJob(vector<job> &J)
 			in >> tempj.JobPT[j];
 		}
 		J.push_back(tempj);
+	}*/
+	J.clear();
+	ofstream out1("jobInfo.txt", ios::ate);
+	out1 << "";
+
+	ofstream out("jobInfo.txt", ios::app);
+	default_random_engine dre((unsigned)time(NULL));// 初始化随机数引擎
+	uniform_int_distribution<int> uid(1, 10);// 使用给出的范围初始化分布类
+	out << "工件id" << '\t' << "工件大小" << '\t';
+	for (int i = 1; i < kmax + 1; i++)
+		out << "第" << i << "阶段名义加工时间" << '\t';
+	out << endl;
+
+	for (int i = 1; i < JobNum + 1; i++)
+	{
+		job tempj;
+		tempj.JobId = i;
+		tempj.JobSize = uid(dre);
+		out << tempj.JobId << '\t' << tempj.JobSize << '\t';
+
+		uniform_int_distribution<int> pt(10, 50);
+		for (int j = 1; j < kmax + 1; j++) {
+			tempj.JobPT[j] = pt(dre);
+			out << tempj.JobPT[j] << '\t';
+		}
+		out << endl;
+			
+		J.push_back(tempj);
+		
 	}
 }
 
@@ -104,6 +135,7 @@ void getPbk(vector<job> J, vector<batch> &B)
 // 分批
 void BFLPT(vector<job> J/*, vector<batch> &B*/)
 {
+	B.clear();
 	sort(J.begin(), J.end(), cmp);//对工件按照加工时间非递增顺序排序
 
 	//主要为了使B使从1开始编号
@@ -178,6 +210,9 @@ int info[100][100];//启发式信息矩阵
 int pos[100];//批的位置
 void computeSIb(/*vector<batch> &B*/)
 {
+	memset(info, 0, sizeof(info));
+	memset(pos, 0, sizeof(pos));
+
 	vector<batch> tempB = B;
 
 	for (int i = 1; i < B.size(); i++)
@@ -190,7 +225,7 @@ void computeSIb(/*vector<batch> &B*/)
 		B[i].SI = (-1)*sum;
 		tempB[i].SI = (-1)*sum;
 	}
-	sort(tempB.begin(), tempB.end(), cmp2);
+	sort(tempB.begin()+1, tempB.end(), cmp2);
 
 	// 计算pos
 	for (int i = 1; i < B.size(); i++)
@@ -210,7 +245,7 @@ void computeSIb(/*vector<batch> &B*/)
 	{
 		for (int j = 0; j < B.size(); j++)
 		{
-			info[i][j] = B.size() - abs(pos[i] - pos[j]);
+			info[i][j] = B.size()-1 - abs(pos[i] - pos[j]);
 		}
 	}
 }
@@ -249,14 +284,28 @@ void initMachine()
 		M[i] = new Machine[10];
 	M[0][0].PW = 1;
 
+	default_random_engine dre((unsigned)time(NULL));// 初始化随机数引擎
+	uniform_int_distribution<int> v(1, 5);// 使用给出的范围初始化分布类
+	uniform_int_distribution<int> pw(5, 10);
+	ofstream out1("machineInfo.txt", ios::ate);
+	out1 << "";
+	ofstream out("machineInfo.txt", ios::app);
+	out << "阶段" << '\t' << "机器号" << '\t' << "速度" << '\t' << "功率" << endl;
+
 	for (int i = 1; i < kmax+1; i++)
 	{
+		
 		for (int j = 1; j < machineNum[i]+1; j++)
 		{
-			//cout << "i=" << i << "j=" << j << "输入速度，功率;" ;
-			in >> M[i][j].V >> M[i][j].PW;
+			out <<  i << '\t';
+			//in >> M[i][j].V >> M[i][j].PW;
+			out <<j<< '\t';
+			M[i][j].V = v(dre);
+			M[i][j].PW = pw(dre);
 			M[i][j].avt = 0;
 			M[i][j].List.clear();
+			
+			out << M[i][j].V << '\t' << M[i][j].PW << endl;
 		}
 	}
 }
